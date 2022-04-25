@@ -32,8 +32,8 @@ PATH_DIR = '../data/nsmc_data'
 PATH_FILE_TRAIN = os.path.join(PATH_DIR, 'nsmc_train.json')
 PATH_FILE_TEST = os.path.join(PATH_DIR, 'nsmc_test.json')
 
-PRETAINED_PREFIX_MODEL_PATH = '../models/MODEL_PREFIX10/'
-PATH_FILE_REPORT = '../data/report_prefix10.json'
+PRETAINED_PREFIX_MODEL_PATH = '../models/MODEL_PREFIX100/'
+PATH_FILE_REPORT = '../data/report_prefix100.txt'
 
 roberta = AutoModel.from_pretrained(PRETAINED_PREFIX_MODEL_PATH)
 tokenizer = AutoTokenizer.from_pretrained(PRETAINED_PREFIX_MODEL_PATH)
@@ -42,7 +42,7 @@ config = AutoConfig.from_pretrained(PRETAINED_PREFIX_MODEL_PATH)
 dataset_train = DatasetCustom.DatasetCustom(PATH_FILE_TRAIN)
 dataset_test = DatasetCustom.DatasetCustom(PATH_FILE_TEST)
 
-BATCH_SIZE = 64
+BATCH_SIZE = 256
 partial_collate_fn = partial(DatasetCustom.custom_collate_fn, tokenizer)
 
 dataloader_train = DataLoader(
@@ -63,20 +63,20 @@ model = Model(roberta)
 
 device = torch.device('cuda:0')
 model.to(device)
-# model = nn.DataParallel(model, device_ids = [1,2])
+model = nn.DataParallel(model, device_ids = [0, 1, 2, 3])
 
 CELoss = nn.BCELoss()
 optimizer = AdamW(model.parameters(), lr=1.0e-5)
 
 model.train()
 
-epochs = 3
+epochs = 20
 
 for epoch in range(epochs):
     start=time.time()
     train_loss = 0
 
-    for batch in tqdm(dataloader_train):
+    for batch in dataloader_train:
         batch_inputs = {k: v.cuda(device) for k, v in list(batch[0].items())}
         batch_labels = batch[1].cuda(device)
 
@@ -126,5 +126,5 @@ for g, p in zip(gold_list, pred_list):
 
 report = classification_report(gold_list_flat, pred_list_flat, digits = 4)
 
-with open(PATH_FILE_REPORT, 'w') as f:
-	json.dump(report, f, indent='\t')
+with open(PATH_FILE_REPORT, "w") as f:
+    print(report, file=f)

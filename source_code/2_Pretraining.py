@@ -257,7 +257,7 @@ class OurTrainingArguments(TrainingArguments):
         #         torch.distributed.init_process_group(backend="nccl")
         #     device = torch.device("cuda", self.local_rank)
         #     self._n_gpu = 1
-        device = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         if device.type == "cuda":
             torch.cuda.set_device(device)
 
@@ -265,7 +265,7 @@ class OurTrainingArguments(TrainingArguments):
 
 def main():
 
-    PRE_SEQ_LEN = 200
+    PRE_SEQ_LEN = 10
     BATCH_SIZE = 64
 
     PATH_DIR_MODEL = '../models/MODEL_PREFIX'+str(PRE_SEQ_LEN)+'/'
