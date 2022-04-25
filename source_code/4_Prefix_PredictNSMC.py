@@ -32,8 +32,8 @@ PATH_DIR = '../data/nsmc_data'
 PATH_FILE_TRAIN = os.path.join(PATH_DIR, 'nsmc_train.json')
 PATH_FILE_TEST = os.path.join(PATH_DIR, 'nsmc_test.json')
 
-PRETAINED_PREFIX_MODEL_PATH = '../models/MODEL_PREFIX10/'
-PATH_FILE_REPORT = '../data/report_prefix10.txt'
+PRETAINED_PREFIX_MODEL_PATH = '../models/MODEL_PREFIX200/'
+PATH_FILE_REPORT = '../data/report_prefix200.txt'
 
 roberta = AutoModel.from_pretrained(PRETAINED_PREFIX_MODEL_PATH)
 tokenizer = AutoTokenizer.from_pretrained(PRETAINED_PREFIX_MODEL_PATH)
@@ -70,7 +70,7 @@ optimizer = AdamW(model.parameters(), lr=1.0e-5)
 
 model.train()
 
-epochs = 20
+epochs = 10
 
 for epoch in range(epochs):
     start=time.time()
