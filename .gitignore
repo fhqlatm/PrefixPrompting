@@ -14,7 +14,7 @@ data/
 
 ## ignore doc/notes.txt, but not doc/server/arch.txt
 # doc/*.txt
-ko_wiki_data/precessed_wiki_ko.txt
+ko_wiki_data/processed_wiki_ko.txt
 
 ## ignore all .pdf files in the doc/ directory
 # doc/**/*.pdf
