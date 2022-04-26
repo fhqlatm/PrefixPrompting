@@ -1,0 +1,6 @@
+https://drive.google.com/file/d/1kUecR7xO7bsHFmUI6AExtY5u2XXlObOG/view
+2.2. 한국어 위키피디아 말뭉치 전처리
+위키피디아 원문에서 이메일, URL, 여러 형태의 공백 등 불필요 문자를 제거하고 숫자 사이에 공백을 추가하는 등의 전처리를 시행합니다.
+
+출처: https://github.com/ratsgo/embedding
+https://ratsgo.github.io/embedding/preprocess.html
