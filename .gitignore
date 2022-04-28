@@ -11,7 +11,7 @@
 # build/
 models/
 data/
-source_code/__pycache__/
+__pycache__/
 
 ## ignore doc/notes.txt, but not doc/server/arch.txt
 # doc/*.txt
