@@ -9,11 +9,19 @@ from typing import Optional, Union, List, Dict, Tuple
 import torch
 import torch.nn as nn
 import torch.distributed as dist
+
+import transformers
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 from torch.optim import AdamW
 from transformers import AutoModel, AutoTokenizer, AutoConfig, MODEL_FOR_MASKED_LM_MAPPING
 from transformers.models.roberta.modeling_roberta import RobertaPreTrainedModel, RobertaModel, RobertaLMHead
+from transformers.file_utils import (
+    add_code_sample_docstrings,
+    add_start_docstrings,
+    add_start_docstrings_to_model_forward,
+    replace_return_docstrings,
+)
 from transformers.modeling_outputs import SequenceClassifierOutput, BaseModelOutputWithPoolingAndCrossAttentions
 from sklearn.metrics import classification_report
 

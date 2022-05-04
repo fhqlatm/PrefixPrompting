@@ -32,7 +32,7 @@ PATH_FILE_TRAIN = os.path.join(PATH_DIR, 'nsmc_train.json')
 PATH_FILE_TEST = os.path.join(PATH_DIR, 'nsmc_test.json')
 
 MODEL_NAME = 'klue/roberta-base'
-PATH_FILE_REPORT = '../data/report_roberta-base.txt'
+PATH_FILE_REPORT = '../data/MODIFIED_report_roberta-base.txt'
 
 roberta = AutoModel.from_pretrained(MODEL_NAME)
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
@@ -62,14 +62,14 @@ model = Model(roberta)
 
 device = torch.device('cuda:0')
 model.to(device)
-model = nn.DataParallel(model, device_ids = [0, 1, 2, 3])
+model = nn.DataParallel(model, device_ids = [0,1,2,3])
 
 CELoss = nn.BCELoss()
 optimizer = AdamW(model.parameters(), lr=1.0e-5)
 
 model.train()
 
-epochs = 10
+epochs = 5
 
 for epoch in range(epochs):
     start=time.time()
@@ -101,7 +101,7 @@ gold_list = []
 pred_list = []
 
 with torch.no_grad():
-    for batch in tqdm(dataloader_test):
+    for batch in dataloader_test:
         batch_inputs = {k: v.cuda(device) for k, v in list(batch[0].items())}
         batch_labels = batch[1].cuda(device)
         

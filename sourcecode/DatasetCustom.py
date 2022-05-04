@@ -33,8 +33,8 @@ def make_label_to_tensor(labels):
 
 def custom_collate_fn(tokenizer: AutoTokenizer, batch):
 
-    input_sentences = [sample[1] for sample in batch]
-    input_labels = [sample[2] for sample in batch]
+    input_sentences = [sample[0] for sample in batch]
+    input_labels = [sample[1] for sample in batch]
 
     batch_inputs = tokenizer(input_sentences, padding = True, return_tensors = "pt")
     batch_labels = make_label_to_tensor(input_labels)

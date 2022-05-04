@@ -1,0 +1,3 @@
+[submodule "sourcecode/SentEval"]
+	path = sourcecode/SentEval
+	url = https://github.com/facebookresearch/SentEval.git

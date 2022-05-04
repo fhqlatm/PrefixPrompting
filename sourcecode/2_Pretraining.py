@@ -2,11 +2,14 @@ import logging
 import math
 import os
 import sys
+import argparse
 from dataclasses import dataclass, field
 from typing import Optional, Union, List, Dict, Tuple
+from importlib_metadata import distribution
 import torch
 import collections
 import random
+
 from datasets import load_dataset
 
 import transformers
@@ -35,6 +38,7 @@ from transformers.data.data_collator import DataCollatorForLanguageModeling
 from transformers.file_utils import cached_property, torch_required, is_torch_available, is_torch_tpu_available
 
 from PrefixRobertaModel import RobertaForCL
+from Trainers import CLTrainer
 
 logger = logging.getLogger(__name__)
 MODEL_CONFIG_CLASSES = list(MODEL_FOR_MASKED_LM_MAPPING.keys())
@@ -140,6 +144,7 @@ class ModelArguments:
         }
     )
 
+
 @dataclass
 class DataTrainingArguments:
     """
@@ -199,6 +204,7 @@ class DataTrainingArguments:
                 extension = self.train_file.split(".")[-1]
                 assert extension in ["csv", "json", "txt"], "`train_file` should be a csv, a json or a txt file."
 
+
 @dataclass
 class OurTrainingArguments(TrainingArguments):
     # Evaluation
@@ -220,73 +226,129 @@ class OurTrainingArguments(TrainingArguments):
     @torch_required
     def _setup_devices(self) -> "torch.device":
         logger.info("PyTorch: setting up devices")
-        # if self.no_cuda:
-        #     device = torch.device("cpu")
-        #     self._n_gpu = 0
-        # elif is_torch_tpu_available():
-        #     device = xm.xla_device()
-        #     self._n_gpu = 0
-        # elif self.local_rank == -1:
-        #     # if n_gpu is > 1 we'll use nn.DataParallel.
-        #     # If you only want to use a specific subset of GPUs use `CUDA_VISIBLE_DEVICES=0`
-        #     # Explicitly set CUDA to the first (index 0) CUDA device, otherwise `set_device` will
-        #     # trigger an error that a device index is missing. Index 0 takes into account the
-        #     # GPUs available in the environment, so `CUDA_VISIBLE_DEVICES=1,2` with `cuda:0`
-        #     # will use the first GPU in that env, i.e. GPU#1
-        #     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        #     # Sometimes the line in the postinit has not been run before we end up here, so just checking we're not at
-        #     # the default value.
-        #     self._n_gpu = torch.cuda.device_count()
-        # else:
-        #     # Here, we'll use torch.distributed.
-        #     # Initializes the distributed backend which will take care of synchronizing nodes/GPUs
-        #     #
-        #     # deepspeed performs its own DDP internally, and requires the program to be started with:
-        #     # deepspeed  ./program.py
-        #     # rather than:
-        #     # python -m torch.distributed.launch --nproc_per_node=2 ./program.py
-        #     if self.deepspeed:
-        #         from .integrations import is_deepspeed_available
+        if self.no_cuda:
+            device = torch.device("cpu")
+            self._n_gpu = 0
+        elif is_torch_tpu_available():
+            device = xm.xla_device()
+            self._n_gpu = 0
+        elif self.local_rank == -1:
+            # if n_gpu is > 1 we'll use nn.DataParallel.
+            # If you only want to use a specific subset of GPUs use `CUDA_VISIBLE_DEVICES=0`
+            # Explicitly set CUDA to the first (index 0) CUDA device, otherwise `set_device` will
+            # trigger an error that a device index is missing. Index 0 takes into account the
+            # GPUs available in the environment, so `CUDA_VISIBLE_DEVICES=1,2` with `cuda:0`
+            # will use the first GPU in that env, i.e. GPU#1
+            device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+            # Sometimes the line in the postinit has not been run before we end up here, so just checking we're not at
+            # the default value.
+            self._n_gpu = torch.cuda.device_count()
+        else:
+            # Here, we'll use torch.distributed.
+            # Initializes the distributed backend which will take care of synchronizing nodes/GPUs
+            #
+            # deepspeed performs its own DDP internally, and requires the program to be started with:
+            # deepspeed  ./program.py
+            # rather than:
+            # python -m torch.distributed.launch --nproc_per_node=2 ./program.py
+            if self.deepspeed:
+                from .integrations import is_deepspeed_available
 
-        #         if not is_deepspeed_available():
-        #             raise ImportError("--deepspeed requires deepspeed: `pip install deepspeed`.")
-        #         import deepspeed
+                if not is_deepspeed_available():
+                    raise ImportError("--deepspeed requires deepspeed: `pip install deepspeed`.")
+                import deepspeed
 
-        #         deepspeed.init_distributed()
-        #     else:
-        #         torch.distributed.init_process_group(backend="nccl")
-        #     device = torch.device("cuda", self.local_rank)
-        #     self._n_gpu = 1
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+                deepspeed.init_distributed()
+            else:
+                torch.distributed.init_process_group(backend="nccl")
+            device = torch.device("cuda", self.local_rank)
+            self._n_gpu = 1
+
         if device.type == "cuda":
             torch.cuda.set_device(device)
 
         return device
 
+def get_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--local_rank", type=int, default=-1, help="local_rank for distributed training on gpus")
+    return parser
+
 def main():
 
-    PRE_SEQ_LEN = 10
-    BATCH_SIZE = 64
+    args = get_parser().parse_args()
 
-    PATH_DIR_MODEL = '../models/MODEL_PREFIX'+str(PRE_SEQ_LEN)+'/'
-    PATH_FILE_TRAIN = '../data/processed_wiki_ko.txt'
+    PRE_SEQ_LEN = 50
+    BATCH_SIZE = 48
+
+    MLM_PROBABILITY = 0.15
+    MAX_SEQ_LENGTH = 64
+    NUM_TRAIN_EPOCHS = 3.0
+    LEARNING_RATE = 5e-3
+
+    PATH_DIR_MODEL = '../models/PROJECTION_SEQ64_MODIFIED_MODEL_PREFIX'+str(PRE_SEQ_LEN)+'/'
+    PATH_FILE_TRAIN = '../data/ko_processed_data/processed_wiki_ko.txt'
     PRETAINED_MODEL_NAME = 'klue/roberta-base'
+
 
     model_args = ModelArguments(
         model_name_or_path= PRETAINED_MODEL_NAME,
-        pre_seq_len= PRE_SEQ_LEN
+        do_mlm= True,
+        prefix_projection= True,
+        pre_seq_len= PRE_SEQ_LEN,
         )
 
     data_args = DataTrainingArguments(
-        train_file= PATH_FILE_TRAIN
+        train_file= PATH_FILE_TRAIN,
+        mlm_probability= MLM_PROBABILITY,
+        max_seq_length= MAX_SEQ_LENGTH,
         )
 
     training_args=OurTrainingArguments(
         output_dir= PATH_DIR_MODEL, 
         do_train= True,
+        # do_eval= True,
+        local_rank= args.local_rank,
+        num_train_epochs= NUM_TRAIN_EPOCHS,
+        learning_rate= LEARNING_RATE,
         per_device_train_batch_size= BATCH_SIZE,
-        per_gpu_train_batch_size= BATCH_SIZE
+        per_device_eval_batch_size= BATCH_SIZE,
+        # load_best_model_at_end= True,
+        # evaluation_strategy= "steps",
+        # metric_for_best_model= "stsb_spearman",
+        # eval_steps= 125,
+        # fp16= True,
         )
+        
+    if (
+        os.path.exists(training_args.output_dir)
+        and os.listdir(training_args.output_dir)
+        and training_args.do_train
+        and not training_args.overwrite_output_dir
+    ):
+        raise ValueError(
+            f"Output directory ({training_args.output_dir}) already exists and is not empty."
+            "Use --overwrite_output_dir to overcome."
+        )
+
+    # Setup logging
+    logging.basicConfig(
+        format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
+        datefmt="%m/%d/%Y %H:%M:%S",
+        level=logging.INFO if is_main_process(training_args.local_rank) else logging.WARN,
+    )
+
+    # Log on each process the small summary:
+    logger.warning(
+        f"Process rank: {training_args.local_rank}, device: {training_args.device}, n_gpu: {training_args.n_gpu}"
+        + f" distributed training: {bool(training_args.local_rank != -1)}, 16-bits training: {training_args.fp16}"
+    )
+    # Set the verbosity to info of the Transformers logger (on main process only):
+    if is_main_process(training_args.local_rank):
+        transformers.utils.logging.set_verbosity_info()
+        transformers.utils.logging.enable_default_handler()
+        transformers.utils.logging.enable_explicit_format()
+    logger.info("Training/evaluation parameters %s", training_args)
 
 	# Set seed before initializing model.
     set_seed(training_args.seed)
@@ -300,7 +362,6 @@ def main():
     #
     # In distributed training, the load_dataset function guarantee that only one local process can concurrently
     # download the dataset.
-
     data_files = {}
     if data_args.train_file is not None:
         data_files["train"] = data_args.train_file
@@ -312,13 +373,11 @@ def main():
     else:
         datasets = load_dataset(extension, data_files=data_files, cache_dir="../data/")
 
-    config = AutoConfig.from_pretrained(PRETAINED_MODEL_NAME)
     config_kwargs = {
         "cache_dir": model_args.cache_dir,
         "revision": model_args.model_revision,
         "use_auth_token": True if model_args.use_auth_token else None,
     }
-
     if model_args.config_name:
         config = AutoConfig.from_pretrained(model_args.config_name, **config_kwargs)
     elif model_args.model_name_or_path:
@@ -327,14 +386,12 @@ def main():
         config = CONFIG_MAPPING[model_args.model_type]()
         logger.warning("You are instantiating a new config instance from scratch.")
 
-    tokenizer = AutoTokenizer.from_pretrained(PRETAINED_MODEL_NAME)
     tokenizer_kwargs = {
         "cache_dir": model_args.cache_dir,
         "use_fast": model_args.use_fast_tokenizer,
         "revision": model_args.model_revision,
         "use_auth_token": True if model_args.use_auth_token else None,
     }
-    
     if model_args.tokenizer_name:
         tokenizer = AutoTokenizer.from_pretrained(model_args.tokenizer_name, **tokenizer_kwargs)
     elif model_args.model_name_or_path:
@@ -344,7 +401,6 @@ def main():
             "You are instantiating a new tokenizer from scratch. This is not supported by this script."
             "You can do it from another script, save it, and load it from here, using --tokenizer_name."
         )
-
     
     model = RobertaForCL.from_pretrained(
         model_args.model_name_or_path,
@@ -356,13 +412,11 @@ def main():
         model_args=model_args                  
     )
 
-
     model.resize_token_embeddings(len(tokenizer))
 
     # Prepare features
     column_names = datasets["train"].column_names
     sent2_cname = None
-
     if len(column_names) == 2:
         # Pair datasets
         sent0_cname = column_names[0]
@@ -529,21 +583,23 @@ def main():
     
     data_collator = default_data_collator if data_args.pad_to_max_length else OurDataCollatorWithPadding(tokenizer)
     
-    
-    trainer = Trainer(
+    trainer = CLTrainer(
         model = model,
         args = training_args,
         train_dataset = train_dataset if training_args.do_train else None,
         tokenizer = tokenizer,
         data_collator = data_collator,
     )
-
     trainer.model_args = model_args
 
     # Training
-    # trainer.train()
     if training_args.do_train:
-        train_result = trainer.train()
+        model_path = (
+            model_args.model_name_or_path
+            if (model_args.model_name_or_path is not None and os.path.isdir(model_args.model_name_or_path))
+            else None
+        )
+        train_result = trainer.train(model_path=model_path)
         trainer.save_model()  # Saves the tokenizer too for easy upload
 
         output_train_file = os.path.join(training_args.output_dir, "train_results.txt")
