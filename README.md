@@ -1,5 +1,7 @@
 # **Prefix Tuning**
 
+![fig2](https://user-images.githubusercontent.com/62884475/167860566-8f8d8c77-c57a-4044-8d1f-be121c1904ad.png)
+
 ## **Processed Data Source Link**
 
 **Link: [Google Drive](https://drive.google.com/file/d/1kUecR7xO7bsHFmUI6AExtY5u2XXlObOG/view)**
