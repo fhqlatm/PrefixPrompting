@@ -161,10 +161,10 @@ def cl_forward(cls,
 
     mlm_outputs = None
     # Flatten input for encoding
-    input_ids = input_ids.view((-1, input_ids.size(-1))) # (bs * num_sent, len)
-    attention_mask = attention_mask.view((-1, attention_mask.size(-1))) # (bs * num_sent len)
+    input_ids = input_ids.view((-1, input_ids.size(-1)))
+    attention_mask = attention_mask.view((-1, attention_mask.size(-1)))
     if token_type_ids is not None:
-        token_type_ids = token_type_ids.view((-1, token_type_ids.size(-1))) # (bs * num_sent, len)
+        token_type_ids = token_type_ids.view((-1, token_type_ids.size(-1)))
         
     ##########################################################################
     past_key_values = cls.get_prompt(batch_size=input_ids.shape[0])
@@ -183,7 +183,7 @@ def cl_forward(cls,
         output_attentions=output_attentions,
         output_hidden_states=True if cls.model_args.pooler_type in ['avg_top2', 'avg_first_last'] else False,
         return_dict=True,
-        past_key_values=past_key_values, # new added
+        past_key_values=past_key_values, # add past_key_values
     )
     
     # MLM auxiliary objective
@@ -199,15 +199,14 @@ def cl_forward(cls,
             output_attentions=output_attentions,
             output_hidden_states=True if cls.model_args.pooler_type in ['avg_top2', 'avg_first_last'] else False,
             return_dict=True,
-            past_key_values=past_key_values, # new added
+            past_key_values=past_key_values, # add past_key_values
         )
 
     # Pooling
-    pooler_output = cls.pooler(attention_mask, outputs) # 这里attention mask需要修改
-    pooler_output = pooler_output.view((batch_size, num_sent, pooler_output.size(-1))) # (bs, num_sent, hidden)
+    pooler_output = cls.pooler(attention_mask, outputs)
+    pooler_output = pooler_output.view((batch_size, num_sent, pooler_output.size(-1)))
 
     # If using "cls", we add an extra MLP layer
-    # (same as BERT's original implementation) over the representation.
     if cls.pooler_type == "cls":
         pooler_output = cls.mlp(pooler_output)
 
@@ -313,7 +312,7 @@ def sentemb_forward(
         output_attentions=output_attentions,
         output_hidden_states=True if cls.pooler_type in ['avg_top2', 'avg_first_last'] else False,
         return_dict=True,
-        past_key_values=past_key_values, # new added
+        past_key_values=past_key_values, # add past_key_values
     )
 
     pooler_output = cls.pooler(attention_mask, outputs)
