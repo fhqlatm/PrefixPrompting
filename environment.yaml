@@ -1,8 +1,7 @@
-name: prefix
+name: {ENV_NAME}
 channels:
   - pytorch
   - huggingface
-  - anaconda
   - conda-forge
   - defaults
 dependencies:
@@ -149,4 +148,4 @@ dependencies:
   - zipp=3.7.0=pyhd3eb1b0_0
   - zlib=1.2.12=h7f8727e_2
   - zstd=1.4.9=haebb681_0
-prefix: /home/{user-name}/anaconda3/envs/prefix
+prefix: /home/{USER_NAME}/anaconda3/envs/{ENV_NAME}

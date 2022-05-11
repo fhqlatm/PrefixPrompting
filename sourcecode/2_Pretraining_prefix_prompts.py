@@ -207,20 +207,15 @@ class DataTrainingArguments:
 
 @dataclass
 class OurTrainingArguments(TrainingArguments):
-    # Evaluation
-    ## By default, we evaluate STS (dev) during training (for selecting best checkpoints) and evaluate 
-    ## both STS and transfer tasks (dev) at the end of training. Using --eval_transfer will allow evaluating
-    ## both STS and transfer tasks (dev) during training.
     eval_transfer: bool = field(
         default=False,
         metadata={"help": "Evaluate transfer task dev sets (in validation)."}
     )
-    ##########################################################################
+
     weight_decay: float = field(
         default=0.0,
         metadata={"help": "Evaluate transfer task dev sets (in validation)."}
     )
-    ##########################################################################
 
     @cached_property
     @torch_required
@@ -233,24 +228,11 @@ class OurTrainingArguments(TrainingArguments):
             device = xm.xla_device()
             self._n_gpu = 0
         elif self.local_rank == -1:
-            # if n_gpu is > 1 we'll use nn.DataParallel.
-            # If you only want to use a specific subset of GPUs use `CUDA_VISIBLE_DEVICES=0`
-            # Explicitly set CUDA to the first (index 0) CUDA device, otherwise `set_device` will
-            # trigger an error that a device index is missing. Index 0 takes into account the
-            # GPUs available in the environment, so `CUDA_VISIBLE_DEVICES=1,2` with `cuda:0`
-            # will use the first GPU in that env, i.e. GPU#1
+            # nn.DataParallel
             device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-            # Sometimes the line in the postinit has not been run before we end up here, so just checking we're not at
-            # the default value.
             self._n_gpu = torch.cuda.device_count()
         else:
-            # Here, we'll use torch.distributed.
-            # Initializes the distributed backend which will take care of synchronizing nodes/GPUs
-            #
-            # deepspeed performs its own DDP internally, and requires the program to be started with:
-            # deepspeed  ./program.py
-            # rather than:
-            # python -m torch.distributed.launch --nproc_per_node=2 ./program.py
+            # torch.distributed
             if self.deepspeed:
                 from .integrations import is_deepspeed_available
 
@@ -269,6 +251,7 @@ class OurTrainingArguments(TrainingArguments):
 
         return device
 
+# Parse local_rank to torch.distributed
 def get_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("--local_rank", type=int, default=-1, help="local_rank for distributed training on gpus")
@@ -278,15 +261,15 @@ def main():
 
     args = get_parser().parse_args()
 
-    PRE_SEQ_LEN = 50
-    BATCH_SIZE = 48
+    PRE_SEQ_LEN = 10
+    BATCH_SIZE = 4
 
     MLM_PROBABILITY = 0.15
-    MAX_SEQ_LENGTH = 64
+    MAX_SEQ_LENGTH = 32
     NUM_TRAIN_EPOCHS = 3.0
-    LEARNING_RATE = 5e-3
+    LEARNING_RATE = 5e-5
 
-    PATH_DIR_MODEL = '../models/PROJECTION_SEQ64_MODIFIED_MODEL_PREFIX'+str(PRE_SEQ_LEN)+'/'
+    PATH_DIR_MODEL = '../models/PREFIX_PROMPTING_MODEL_(PREFIX'+str(PRE_SEQ_LEN)+')/'
     PATH_FILE_TRAIN = '../data/ko_processed_data/processed_wiki_ko.txt'
     PRETAINED_MODEL_NAME = 'klue/roberta-base'
 
@@ -548,7 +531,6 @@ def main():
             else:
                 special_tokens_mask = special_tokens_mask.bool()
             
-            #
             probability_matrix = torch.full(labels.shape, self.mlm_probability)
             probability_matrix.masked_fill_(special_tokens_mask, value=0.0)
             
@@ -563,22 +545,7 @@ def main():
             indices_random = torch.bernoulli(torch.full(labels.shape, 0.5)).bool() & masked_indices & ~indices_replaced
             random_words = torch.randint(len(self.tokenizer), labels.shape, dtype=torch.long)
             inputs[indices_random] = random_words[indices_random]
-            
-            ###################################################################
-            # probability_matrix = torch.ones_like(labels)
-            # probability_matrix.masked_fill_(special_tokens_mask, value=0.0)
-            # picked_indices = torch.multinomial(probability_matrix.float(), 1)
-            # probability_matrix = torch.zeros_like(labels).scatter_(-1, picked_indices, 1.0)
-            
-            # masked_indices = torch.bernoulli(probability_matrix.float()).bool()
-            # labels[~masked_indices] = -100  # We only compute loss on masked tokens
-            
-            # # 100% of the time, we replace masked input tokens with tokenizer.mask_token ([MASK])
-            # indices_replaced = torch.bernoulli(torch.full(labels.shape, 1.0)).bool() & masked_indices
-            # inputs[indices_replaced] = self.tokenizer.convert_tokens_to_ids(self.tokenizer.mask_token)
-            ###################################################################
-            
-            # The rest of the time (10% of the time) we keep the masked input tokens unchanged
+    
             return inputs, labels
     
     data_collator = default_data_collator if data_args.pad_to_max_length else OurDataCollatorWithPadding(tokenizer)
@@ -600,7 +567,7 @@ def main():
             else None
         )
         train_result = trainer.train(model_path=model_path)
-        trainer.save_model()  # Saves the tokenizer too for easy upload
+        trainer.save_model()
 
         output_train_file = os.path.join(training_args.output_dir, "train_results.txt")
         if trainer.is_world_process_zero():

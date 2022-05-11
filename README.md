@@ -34,6 +34,8 @@ $ ```git submodule update```
 
 $ ```conda env create -f environment.yaml```
 
+- Modify {ENV_NAME} and {USER_NAME}
+
 ---
 
 ## **How to run**
@@ -42,25 +44,45 @@ $ ```cd ./sourcecode/SentEval/data/downstream/```
 
 $ ```./get_transfer_data.bash```
 
+- Download SentEval data
+
 $ ```cd ../../../```
 
-$ ```python ./1_Datapreprocessing```
+- Working directory: prefix_tuning/sourcecode/
 
-$ ```CUDA_VISIBLE_DEVICES={Multiple GPU NUMBERS} python -m torch.distributed.launch --nproc_per_node={NUMBER of GPUs} ./2_Pretraining.py``` 
+$ ```python ./1_Data_preprocessing.py```
 
-- or $ ```CUDA_VISIBLE_DEVICES={Single GPU NUMBER} python ./2_Pretraining.py```
+- Load data and convert to json string
 
-- if socket binding error: use ```--master_port {PORT_ID}``` option
+$ ```CUDA_VISIBLE_DEVICES={Multiple GPU NUMBERS} python -m torch.distributed.launch --nproc_per_node={NUMBER of GPUs} ./2_Pretraining_prefix_prompts.py``` 
 
-$ ```python ./3_Roberta_PredictNSMC.py```
+- Pretrain prefix prompts (DDP)
 
-$ ```python ./4_Prefix_PredictNSMC.py```
+- or $ ```CUDA_VISIBLE_DEVICES={Single GPU NUMBER} python ./2_Pretraining_prefix_prompts.py.py```
 
-$ ```python ./5_Prefix_PredictNSMC_partial_parameters.py```
+- if socket binding error: use option ```--master_port {PORT_ID}```
+
+$ ```python ./3_Freeze_parameters_roberta.py```
+
+- Freeze roberta-base model
+
+$ ```python ./4_Freeze_parameters_prefix_model.py```
+
+- Freeze prefix prompting model
+
+$ ```python ./5_Fine_tuning_roberta.py```
+
+- Fine-tuning roberta-base model
+
+$ ```python ./6_Fine_tuning_prefix_model.py```
+
+- Fine-tuning prefix prompting model
 
 ---
 
 ## **Data Source:**
+
+Preprocessed Korean Corpus Data
 
 * https://github.com/ratsgo/embedding
 

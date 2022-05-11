@@ -32,17 +32,21 @@ PATH_DIR = '../data/nsmc_data'
 PATH_FILE_TRAIN = os.path.join(PATH_DIR, 'nsmc_train.json')
 PATH_FILE_TEST = os.path.join(PATH_DIR, 'nsmc_test.json')
 
-PRETAINED_PREFIX_MODEL_PATH = '../models/PROJECTION_MODIFIED_MODEL_PREFIX50'
-PATH_FILE_REPORT = '../data/Partial_report_prefix50.txt'
+PRE_SEQ_LEN = 10
+BATCH_SIZE = 256
 
-roberta = AutoModel.from_pretrained(PRETAINED_PREFIX_MODEL_PATH)
+PRETAINED_PREFIX_MODEL_PATH = '../models/PREFIX_PROMPTING_MODEL_(PREFIX'+str(PRE_SEQ_LEN)+')/'
+PATH_FILE_REPORT = '../data/Freeze_prefix_model_report_(PREFIX'+str(PRE_SEQ_LEN)+').txt'
+ROBERTA_MODEL_NAME = 'klue/roberta-base'
+
+prefixroberta = AutoModel.from_pretrained(PRETAINED_PREFIX_MODEL_PATH)
+roberta = AutoModel.from_pretrained(ROBERTA_MODEL_NAME)
 tokenizer = AutoTokenizer.from_pretrained(PRETAINED_PREFIX_MODEL_PATH)
 config = AutoConfig.from_pretrained(PRETAINED_PREFIX_MODEL_PATH)
 
 dataset_train = DatasetCustom.DatasetCustom(PATH_FILE_TRAIN)
 dataset_test = DatasetCustom.DatasetCustom(PATH_FILE_TEST)
 
-BATCH_SIZE = 512
 partial_collate_fn = partial(DatasetCustom.custom_collate_fn, tokenizer)
 
 dataloader_train = DataLoader(
@@ -59,17 +63,24 @@ dataloader_test = DataLoader(
     collate_fn=partial_collate_fn
 )
 
-for param in roberta.parameters():
-    param.requires_grad = False
+roberta_params = [name for name, param in roberta.named_parameters()]
 
-model = Model(roberta)
+for name, param in prefixroberta.named_parameters():
+    if name in roberta_params:
+        param.requires_grad = False
+
+model = Model(prefixroberta)
+
+total_param = sum(p.numel() for p in model.parameters())
+trainable_param = sum(p.numel() for p in model.parameters() if p.requires_grad)
+print('total param is {}, trainable param is {}, trainable params rate: {:.3f}%'.format(total_param, trainable_param, (trainable_param/total_param)*100))
 
 # for name, param in model.named_parameters():
 #     print(name, param.requires_grad)
 
-device = torch.device('cuda:1')
+device = torch.device('cuda:0')
 model.to(device)
-# model = nn.DataParallel(model, device_ids = [2,3])
+# model = nn.DataParallel(model, device_ids = [0,1,2,3])
 
 CELoss = nn.BCELoss()
 optimizer = AdamW(model.parameters(), lr=1.0e-5)
@@ -89,7 +100,6 @@ for epoch in range(epochs):
         output = model(**batch_inputs)
 
         loss = CELoss(output.view(-1).to(torch.float32), batch_labels.view(-1).to(torch.float32))
-        # loss = CELoss(output.view(-1, output.size(-1)), batch_labels.view(-1))
 
         optimizer.zero_grad()
         loss.backward()
@@ -115,11 +125,8 @@ with torch.no_grad():
         output = model(**batch_inputs)
         loss = CELoss(output.view(-1).to(torch.float32), batch_labels.view(-1).to(torch.float32))
         
-        # print('loss:', loss.item())
-        
         for gold, pred in zip(batch_labels, output):
             pred = torch.round(pred)
-            # pred = pred.to(torch.int32)
 
             gold_list.append(gold)
             pred_list.append(pred)
