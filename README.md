@@ -56,11 +56,11 @@ $ ```python ./1_Data_preprocessing.py```
 
 - Load data and convert to json string
 
-$ ```CUDA_VISIBLE_DEVICES={Multiple GPU NUMBERS} python -m torch.distributed.launch --nproc_per_node={NUMBER of GPUs} ./2_Pretraining_prefix_prompts.py``` 
+$ ```CUDA_VISIBLE_DEVICES={Multiple GPU IDs} python -m torch.distributed.launch --nproc_per_node={NUMBER of GPUs} ./2_Pretraining_prefix_prompts.py``` 
 
 - Pretrain prefix prompts (DDP)
 
-- or $ ```CUDA_VISIBLE_DEVICES={Single GPU NUMBER} python ./2_Pretraining_prefix_prompts.py.py```
+- or $ ```CUDA_VISIBLE_DEVICES={Single GPU ID} python ./2_Pretraining_prefix_prompts.py.py```
 
 - if socket binding error: use option ```--master_port {PORT_ID}```
 
