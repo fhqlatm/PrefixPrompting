@@ -17,69 +17,105 @@
 
 **DOWNLOAD PATH:**
 
+1. 제시된 한국어 전처리 데이터를 아래 경로에 다운로드
+
 	/data/ko_processed_data/
 
 ---
 
-## **submodule**
+## **Submodule**
 
-- SentEval
+2. SentEval 서브모듈 처리
 
-$ ```git submodule init```
+```console
+$ git submodule init
 
-$ ```git submodule update```
-
-
----
-
-## **conda environment**
-
-$ ```conda env create -f environment.yaml```
-
-- Modify {ENV_NAME} and {USER_NAME}
+$ git submodule update
+```
 
 ---
 
-## **How to run**
+## **Conda environment**
 
-$ ```cd ./sourcecode/SentEval/data/downstream/```
+3. 가상환경 생성
 
-$ ```./get_transfer_data.bash```
+```console
+$ conda env create -f environment.yaml
+```
+Modify {ENV_NAME} and {USER_NAME}
 
-- Download SentEval data
+---
 
-$ ```cd ../../../```
+## **Process**
 
-- Working directory: prefix_tuning/sourcecode/
+4. SentEval 데이터 다운로드
 
-$ ```python ./1_Data_preprocessing.py```
+```console
+$ cd ./sourcecode/SentEval/data/downstream/
 
-- Load data and convert to json string
+$ ./get_transfer_data.bash
+```
 
-$ ```CUDA_VISIBLE_DEVICES={Multiple GPU IDs} python -m torch.distributed.launch --nproc_per_node={NUMBER of GPUs} ./2_Pretraining_prefix_prompts.py``` 
+5. 작업 디렉토리 이동 (sourcecode/)
 
-- Pretrain prefix prompts (DDP)
+```console
+$ cd ../../../
+```
 
-- or $ ```CUDA_VISIBLE_DEVICES={Single GPU ID} python ./2_Pretraining_prefix_prompts.py.py```
+6. Convert json string
 
-- if socket binding error: use option ```--master_port {PORT_ID}```
+```console
+$ python ./1_Data_preprocessing.py
+```
 
-$ ```python ./3_Freeze_parameters_roberta.py```
+---
 
-- Freeze roberta-base model
+## **Pretraining**
 
-$ ```python ./4_Freeze_parameters_prefix_model.py```
+7. Train prefix prompts
 
-- Freeze prefix prompting model
+```console
+$ CUDA_VISIBLE_DEVICES={Multiple GPU IDs} python -m torch.distributed.launch --nproc_per_node={NUMBER of GPUs} ./2_Pretraining_prefix_prompts.py
+```
+or
 
-$ ```python ./5_Fine_tuning_roberta.py```
+```console
+$ CUDA_VISIBLE_DEVICES={Single GPU ID} python ./2_Pretraining_prefix_prompts.py
+```
 
-- Fine-tuning roberta-base model
+---
 
-$ ```python ./6_Fine_tuning_prefix_model.py```
+## **Evaluation**
 
-- Fine-tuning prefix prompting model
+8. roberta 매개변수 고정 후 성능 측정
 
+```console
+$ python ./3_Freeze_parameters_roberta.py
+
+$ python ./4_Freeze_parameters_prefix_model.py
+```
+
+9. Fine-tuning 성능 측정
+
+```console
+$ python ./5_Fine_tuning_roberta.py
+
+$ python ./6_Fine_tuning_prefix_model.py
+```
+
+| 	Model            			| Accuracy (%) 	|
+| ----------------------------- | -------------	|
+| RoBERTa            		 	| 62.97    		|
+| Prefix-Length10	 		 	| 61.85    		|
+| Prefix-Length50	 		 	| 68.31    		|
+| Prefix-Length100	 		 	| 64.55    		|
+| Prefix-Length200	 		 	| 67.97    		|
+| | |
+| RoBERTa          (Fine-tuning)| 90.78    		|
+| Prefix-Length10  (Fine-tuning)| 90.83    		|
+| Prefix-Length50  (Fine-tuning)| 90.89    		|
+| Prefix-Length100 (Fine-tuning)| 90.88    		|
+| Prefix-Length200 (Fine-tuning)| 90.68    		|
 ---
 
 ## **Data Source:**
