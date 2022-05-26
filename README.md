@@ -1,4 +1,8 @@
-# **Prefix Tuning**
+# **pretrainedPrompting**
+
+**모델의 일반화 및 경량화가 가능한 한국어 자연언어처리 모델을 구성하기 위해**
+
+**가상토큰인 Prefix를 추가하여 Pre-trained Prefix Prompting 모델을 구축하고 한국어 자연언어처리 태스크에 활용**
 
 ![fig2](https://user-images.githubusercontent.com/62884475/167860566-8f8d8c77-c57a-4044-8d1f-be121c1904ad.png)
 
@@ -10,7 +14,7 @@
 
 >processed_wiki_ko.txt			한국어 위키백과
 
->processed_ratings_train.txt	네이버 영화 말뭉치 학습셋 (극성 레이블 있음)
+>processed_ratings_train.txt		네이버 영화 말뭉치 학습셋 (극성 레이블 있음)
 
 >processed_ratings_test.txt		네이버 영화 말뭉치 테스트셋 (극성 레이블 있음)
 
