@@ -1,4 +1,4 @@
-# **pretrainedPrompting**
+# **Prefix Prompting**
 
 **모델의 일반화 및 경량화가 가능한 한국어 자연언어처리 모델을 구성하기 위해**
 
