@@ -2,7 +2,7 @@
 
 **모델의 일반화 및 경량화가 가능한 한국어 자연언어처리 모델을 구성하기 위해**
 
-**가상토큰인 Prefix를 추가하여 Pre-trained Prefix Prompting 모델을 구축하고 한국어 자연언어처리 태스크에 활용**
+**가상토큰인 Prefix를 추가하여 Pre-trained Prefix Prompting 모델을 구축하고 학습시켜 한국어 감성분류 태스크에 적용하는 방법을 보인다.**
 
 ![fig2](https://user-images.githubusercontent.com/62884475/167860566-8f8d8c77-c57a-4044-8d1f-be121c1904ad.png)
 
@@ -10,7 +10,7 @@
 
 **Link: [Google Drive](https://drive.google.com/file/d/1kUecR7xO7bsHFmUI6AExtY5u2XXlObOG/view)**
 
-원문에서 이메일, URL, 여러 형태의 공백 등 불필요 문자를 제거하고 숫자 사이에 공백을 추가하는 등의 전처리를 시행합니다.
+원문에서 이메일, URL, 여러 형태의 공백 등 불필요 문자를 제거하고 숫자 사이에 공백을 추가하는 등의 전처리를 시행하였으며 다음 데이터셋 활용
 
 >processed_wiki_ko.txt			한국어 위키백과
 
