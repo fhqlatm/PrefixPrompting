@@ -18,18 +18,21 @@
 
 >processed_ratings_test.txt		네이버 영화 말뭉치 테스트셋 (극성 레이블 있음)
 
+---
 
-**DOWNLOAD PATH:**
+## **Process**
 
-1. 제시된 한국어 전처리 데이터를 아래 경로에 다운로드
+### **1. Download Data**
+
+제시된 한국어 전처리 데이터를 아래 경로에 다운로드
 
 	/data/ko_processed_data/
 
 ---
 
-## **Submodule**
+## **2. Initialize Submodule**
 
-2. SentEval 서브모듈 처리
+SentEval 서브모듈 정의
 
 ```console
 $ git submodule init
@@ -39,20 +42,16 @@ $ git submodule update
 
 ---
 
-## **Conda environment**
+## **3. Set Environment**
 
-3. 가상환경 생성
+가상환경 생성
 
 ```console
 $ conda env create -f environment.yaml
 ```
 Modify {ENV_NAME} and {USER_NAME}
 
----
-
-## **Process**
-
-4. SentEval 데이터 다운로드
+SentEval 데이터 다운로드
 
 ```console
 $ cd ./sourcecode/SentEval/data/downstream/
@@ -60,13 +59,13 @@ $ cd ./sourcecode/SentEval/data/downstream/
 $ ./get_transfer_data.bash
 ```
 
-5. 작업 디렉토리 이동 (sourcecode/)
+작업 디렉토리 이동 (sourcecode/)
 
 ```console
 $ cd ../../../
 ```
 
-6. Convert json string
+Convert json string
 
 ```console
 $ python ./1_Data_preprocessing.py
@@ -74,9 +73,9 @@ $ python ./1_Data_preprocessing.py
 
 ---
 
-## **Pretraining**
+## **4. Train Prefix Prompts**
 
-7. Train prefix prompts
+Prefix 사전 학습
 
 ```console
 $ CUDA_VISIBLE_DEVICES={Multiple GPU IDs} python -m torch.distributed.launch --nproc_per_node={NUMBER of GPUs} ./2_Pretraining_prefix_prompts.py
@@ -89,9 +88,9 @@ $ CUDA_VISIBLE_DEVICES={Single GPU ID} python ./2_Pretraining_prefix_prompts.py
 
 ---
 
-## **Evaluation**
+## **5. Evaluate Models**
 
-8. roberta 매개변수 고정 후 성능 측정
+RoBERTa 매개변수 고정 후 성능 측정
 
 ```console
 $ python ./3_Freeze_parameters_roberta.py
@@ -99,7 +98,7 @@ $ python ./3_Freeze_parameters_roberta.py
 $ python ./4_Freeze_parameters_prefix_model.py
 ```
 
-9. Fine-tuning 성능 측정
+Fine-tuning 성능 측정
 
 ```console
 $ python ./5_Fine_tuning_roberta.py
@@ -122,7 +121,7 @@ $ python ./6_Fine_tuning_prefix_model.py
 | Prefix-Length200 (Fine-tuning)| 90.68    		|
 ---
 
-## **Data Source:**
+## **References**
 
 Preprocessed Korean Corpus Data
 
