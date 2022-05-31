@@ -10,7 +10,7 @@
 
 **Link: [Google Drive](https://drive.google.com/file/d/1kUecR7xO7bsHFmUI6AExtY5u2XXlObOG/view)**
 
-원문에서 이메일, URL, 여러 형태의 공백 등 불필요 문자를 제거하고 숫자 사이에 공백을 추가하는 등의 전처리를 시행하였으며 다음 데이터셋 활용
+원문에서 이메일, URL, 여러 형태의 공백 등 불필요 문자를 제거하고 숫자 사이에 공백을 추가하는 등의 전처리를 시행하였으며 아래의 데이터 셋을 활용함
 
 >processed_wiki_ko.txt			한국어 위키백과
 
